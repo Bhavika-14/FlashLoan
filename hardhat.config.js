@@ -6,7 +6,14 @@ module.exports = {
     compilers: [
       { version: "0.5.5" },
       { version: "0.6.6" },
-      { version: "0.8.8" },
+      { version: "0.8.9" },
     ],
+  },
+  networks: {
+    hardhat: {
+      forking: {
+        url: "https://bsc-dataseed1.binance.org/",
+      },
+    },
   },
 };
