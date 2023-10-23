@@ -2,6 +2,8 @@
 pragma solidity ^0.8.9;
 
 import "./interfaces/IERC20.sol";
+import "./interfaces/IUniswapV2Factory.sol";
+import "./interfaces/IUniswapV2Pair.sol";
 import "./libraries/SafeERC20.sol";
 import "hardhat/console.sol";
 
@@ -24,13 +26,54 @@ contract FlashLoan {
     uint256 private constant MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    function initiateArbitrage(address _busdBorrow,uint amount){
+    function initiateArbitrage(address _busdBorrow,uint amount) public {
+
+        // To give Pancake Router permission to use these tokens
         IERC20(BUSD).safeApprove(address(PANCAKE_ROUTER),MAX_INT);
         IERC20(CROX).safeApprove(address(PANCAKE_ROUTER),MAX_INT);
         IERC20(CAKE).safeApprove(address(PANCAKE_ROUTER),MAX_INT);
 
-        const pair = IUniswapV2Factory
+
+        // To get address of liquidity pool
+        address pair = IUniswapV2Factory(PANCAKE_FACTORY).getPair(_busdBorrow,WBNB);
+
+        require(pair!=address(0),"The Liquidity pool does not exist");
+
+        // To get address of tokens of liquidity pool
+
+        address token0 = IUniswapV2Pair(pair).token0();
+        address token1 = IUniswapV2Pair(pair).token1();
+
+        uint amount0Out;
+        uint amount1Out;
+        if(_busdBorrow==token0){
+            amount0Out=amount;
+        }
+        else{
+            amount0Out=0;
+        }
+        if(_busdBorrow==token1){
+            amount1Out=amount;
+        }
+        else{
+            amount1Out=0;
+        }
+
+        // data is sent to distinguish between non-flash swap and flash swap
+
+        bytes memory data = abi.encode(_busdBorrow,amount,msg.sender);
+
+        IUniswapV2Pair(pair).swap(amount0Out,amount1Out,address(this),data);
         
+        
+    }
+    
+
+    // pancakeCall is called by pair contract in swap function 
+    
+    function pancakeCall(address _sender,uint amount0,uint amount1,bytes calldata data) external {
+
+
     }
 
     
